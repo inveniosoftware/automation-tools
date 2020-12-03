@@ -9,6 +9,7 @@ import json
 import requests
 import click
 
+from config import repository_paths_to_migrate
 
 logging.basicConfig(level=logging.DEBUG)
 
@@ -144,94 +145,105 @@ def replace_list(filepath, regex, to_remove, to_add, var_name):
         f.write(content2)
 
 
-@click.command()
-@click.option("--targetpath", default=".", help="Target repo directory path")
-def pipeline(targetpath):
-    """Helps the migration from Travis CI pipelines
-    to GitHub Actions running some common tasks"""
+def migrate_repo(path):
+    """Perform migration to repo on given path."""
 
-    repo = targetpath.split("/")[-1]
+    click.secho(f"\n>>> Migrating {path}...", fg="green")
+
+    repo = path.split("/")[-1]
     repo_underscores = repo.replace("-", "_")
 
     # TODO: add the trailing slash only if needed
-    targetpath = targetpath + "/"
+    path = path + "/"
     # Reference: https://codimd.web.cern.ch/TOOkF5yhSAKJq3TiY0L42A?view
 
     # .editorconfig
     replace_simple(
-        targetpath + ".travis.yml", ".github/workflows/*.yml", ".editorconfig"
+        path + ".travis.yml", ".github/workflows/*.yml", ".editorconfig"
     )
 
     # README.rst
     replace_regex(
         r"https:\/\/img\.shields\.io\/travis\/([a-z]*\/[a-z-]*)\.svg",
         "https://github.com/\\1/workflows/CI/badge.svg",
-        targetpath + "README.rst",
+        path + "README.rst",
     )
     replace_regex(
         r"https:\/\/travis-ci\.org\/([a-z]*\/[a-z-]*)",
         "https://github.com/\\1/actions?query=workflow%3ACI",
-        targetpath + "README.rst",
+        path + "README.rst",
     )
 
     # CONTRIBUTING.rst
     replace_regex(
         r"https:\/\/travis-ci\.(org|com)\/([a-z]*\/[a-z-]*)\/pull_requests",
         "https://github.com/\\2/actions?query=event%3Apull_request",
-        targetpath + "CONTRIBUTING.rst",
+        path + "CONTRIBUTING.rst",
     )
 
     # run-tests.sh
-    delete_line("isort", targetpath + "run-tests.sh")
+    delete_line("isort", path + "run-tests.sh")
     replace_simple(
         'check-manifest --ignore ".travis-*"',
         'check-manifest --ignore ".*-requirements.txt"',
-        targetpath + "run-tests.sh",
+        path + "run-tests.sh",
     )
 
     # Download tests.yml template
     download_file(
         GA_TESTS_YAML_URL,
-        targetpath + ".github/workflows/tests.yml",
+        path + ".github/workflows/tests.yml",
     )
 
     # Download pypi-publish.yml template
     download_file(
         GA_PYPI_PUBLISH_YAML_URL,
-        targetpath + ".github/workflows/pypi-publish.yml",
+        path + ".github/workflows/pypi-publish.yml",
     )
 
     # pytest.ini
-    delete_line("pep8ignore", targetpath + "pytest.ini")
+    delete_line("pep8ignore", path + "pytest.ini")
     replace_regex(
         "(addopts =).*",
         f'\\1 --isort --pydocstyle --pycodestyle --doctest-glob="*.rst" --doctest-modules --cov={repo_underscores} --cov-report=term-missing',
-        targetpath + "pytest.ini",
+        path + "pytest.ini",
     )
-    if not file_contains("testpaths", targetpath + "pytest.ini"):
+    if not file_contains("testpaths", path + "pytest.ini"):
         append_to_file(
-            f"testpaths = tests {repo_underscores}", targetpath + "pytest.ini"
+            f"testpaths = tests {repo_underscores}", path + "pytest.ini"
         )
 
     # Add .github/workflows *.yml to MANIFEST.in
     add_line(
-        "recursive-include .github/workflows *.yml", targetpath + "MANIFEST.in"
+        "recursive-include .github/workflows *.yml", path + "MANIFEST.in"
     )
 
     # Delete travis file
-    delete_file(targetpath + ".travis.yml")
+    delete_file(path + ".travis.yml")
 
     # Remove bak files
-    delete_file(targetpath + "*.bak")
+    delete_file(path + "*.bak")
 
-    # replace_list(targetpath + "setup.py", ["a"], ["b"])
+    # setup.py: replace pytest deps with pytest-invenio
     replace_list(
-        targetpath + "setup.py",
+        path + "setup.py",
         r"tests_require = ([[\s*\"(a-z-Z><=0-9.),]*])",
         ["pytest-cov", "pytest-pep8"],
         ["pytest-invenio>=1.4.0"],
         "tests_require",
     )
+
+@click.command()
+@click.option("--targetpath", help="Target repo directory path")
+def pipeline(targetpath):
+    """Helps the migration from Travis CI pipelines
+    to GitHub Actions running some common tasks"""
+
+    if targetpath:
+        migrate_repo(targetpath)
+    else:
+        for repo_path in repository_paths_to_migrate:
+            migrate_repo(repo_path)
 
 
 if __name__ == "__main__":
