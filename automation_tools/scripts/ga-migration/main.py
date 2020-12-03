@@ -24,6 +24,36 @@ def delete_file(filepath):
             logging.info("No %s found" % file)
 
 
+def delete_line(term, filepath):
+    """Delete file line contaning given term."""
+    logging.info(f"TASK: Deleting line containing {term} in {filepath}")
+    # import wdb; wdb.set_trace()
+    if not os.path.isfile(filepath):
+        logging.info("No %s found" % filepath)
+    else:
+        logging.info("Found %s" % filepath)
+        with open(filepath, "r") as f:
+            lines = f.readlines()
+        with open(filepath, "w") as f:
+            for line in lines:
+                if term not in line:
+                    f.write(line)
+                else:
+                    logging.info(f"TASK: Line deleted")
+
+
+def file_contains(term, filepath):
+    """Check whether file contains given term."""
+    with open(filepath) as f:
+        return term in f.read()
+
+
+def append_to_file(text, filepath):
+    """Append text to file."""
+    with open(filepath, "a") as f:
+        f.write(text)
+
+
 def replace_simple(text, replacing, filepath):
     """
     Replaces every match of a string with another in the specified file
@@ -45,9 +75,7 @@ def replace_regex(regex, output, filepath):
     """
     Replaces every match of a string with another in the specified file
     """
-    logging.info(
-        "TASK: RegEx replacing %s with %s in %s" % (regex, output, filepath)
-    )
+    logging.info("TASK: RegEx replacing %s with %s in %s" % (regex, output, filepath))
     if os.path.isfile(filepath):
         logging.info("Found %s" % filepath)
         # TODO: expose number of matches
@@ -74,15 +102,19 @@ def pipeline(targetpath):
     """Helps the migration from Travis CI pipelines
     to GitHub Actions running some common tasks"""
 
+    repo = targetpath.split("/")[-1]
+    repo_underscores = repo.replace("-", "_")
+
     # TODO: add the trailing slash only if needed
     targetpath = targetpath + "/"
     # Reference: https://codimd.web.cern.ch/TOOkF5yhSAKJq3TiY0L42A?view
 
-    # Step 3
+    # .editorconfig
     replace_simple(
         targetpath + ".travis.yml", ".github/workflows/*.yml", ".editorconfig"
     )
-    # Step 4.1
+
+    # README.rst
     replace_regex(
         r"https:\/\/img\.shields\.io\/travis\/([a-z]*\/[a-z-]*)\.svg",
         "https://github.com/\\1/workflows/CI/badge.svg",
@@ -93,24 +125,21 @@ def pipeline(targetpath):
         "https://github.com/\\1/actions?query=workflow%3ACI",
         targetpath + "README.rst",
     )
-    # Step 4.2
+
+    # CONTRIBUTING.rst
     replace_regex(
         r"https:\/\/travis-ci\.(org|com)\/([a-z]*\/[a-z-]*)\/pull_requests",
         "https://github.com/\\2/actions?query=event%3Apull_request",
         targetpath + "CONTRIBUTING.rst",
     )
-    # Step 5
+
+    # run-tests.sh
+    delete_line("isort", targetpath + "run-tests.sh")
     replace_simple(
         'check-manifest --ignore ".travis-*"',
         'check-manifest --ignore ".*-requirements.txt"',
         targetpath + "run-tests.sh",
     )
-
-    # Delete travis file
-    delete_file(targetpath + ".travis.yml")
-
-    # Remove bak files
-    delete_file(targetpath + "*.bak")
 
     # Download tests.yml template
     download_file(
@@ -123,6 +152,24 @@ def pipeline(targetpath):
         "https://raw.githubusercontent.com/inveniosoftware/.github/master/workflow-templates/pypi-publish.yml",
         targetpath + ".github/workflows/pypi-publish.yml",
     )
+
+    # pytest.ini
+    delete_line("pep8ignore", targetpath + "pytest.ini")
+    replace_regex(
+        "(addopts =).*",
+        f'\\1 --isort --pydocstyle --pycodestyle --doctest-glob="*.rst" --doctest-modules --cov={repo_underscores} --cov-report=term-missing tests {repo_underscores}',
+        targetpath + "pytest.ini",
+    )
+    if not file_contains("testpaths", targetpath + "pytest.ini"):
+        append_to_file(
+            f"testpaths = tests {repo_underscores}", targetpath + "pytest.ini"
+        )
+
+    # Delete travis file
+    delete_file(targetpath + ".travis.yml")
+
+    # Remove bak files
+    delete_file(targetpath + "*.bak")
 
 
 if __name__ == "__main__":
