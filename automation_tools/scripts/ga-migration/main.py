@@ -42,6 +42,20 @@ def delete_line(term, filepath):
                     logging.info(f"TASK: Line deleted")
 
 
+def add_line(term, filepath):
+    """ Add a line to a file """
+    logging.info("TASK: Adding line '%s' to %s" % (term, filepath))
+    # If the file exists
+    if os.path.isfile(filepath):
+        # And the line is not already there
+        if not file_contains(term, filepath):
+            append_to_file(term, filepath)
+        else:
+            logging.info("SKIPPED TASK. Line already there. ")
+    else:
+        logging.info("SKIPPED TASK. No %s found" % filepath)
+
+
 def file_contains(term, filepath):
     """Check whether file contains given term."""
     with open(filepath) as f:
@@ -75,7 +89,9 @@ def replace_regex(regex, output, filepath):
     """
     Replaces every match of a string with another in the specified file
     """
-    logging.info("TASK: RegEx replacing %s with %s in %s" % (regex, output, filepath))
+    logging.info(
+        "TASK: RegEx replacing %s with %s in %s" % (regex, output, filepath)
+    )
     if os.path.isfile(filepath):
         logging.info("Found %s" % filepath)
         # TODO: expose number of matches
@@ -164,6 +180,11 @@ def pipeline(targetpath):
         append_to_file(
             f"testpaths = tests {repo_underscores}", targetpath + "pytest.ini"
         )
+
+    #
+    add_line(
+        "recursive-include .github/workflows *.yml", targetpath + "MANIFEST.in"
+    )
 
     # Delete travis file
     delete_file(targetpath + ".travis.yml")
