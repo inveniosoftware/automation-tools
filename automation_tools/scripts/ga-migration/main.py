@@ -12,6 +12,9 @@ import click
 
 logging.basicConfig(level=logging.DEBUG)
 
+GA_TESTS_YAML_URL = "https://raw.githubusercontent.com/inveniosoftware/.github/master/workflow-templates/tests.yml"
+GA_PYPI_PUBLISH_YAML_URL = "https://raw.githubusercontent.com/inveniosoftware/.github/master/workflow-templates/pypi-publish.yml"
+
 
 def delete_file(filepath):
     """
@@ -45,6 +48,18 @@ def delete_line(term, filepath):
                     logging.info(f"TASK: Line deleted")
 
 
+def file_contains(term, filepath):
+    """Check whether file contains given term."""
+    with open(filepath) as f:
+        return term in f.read()
+
+
+def append_to_file(text, filepath):
+    """Append text to file."""
+    with open(filepath, "a") as f:
+        f.write(text)
+
+
 def add_line(term, filepath):
     """ Add a line to a file """
     logging.info("TASK: Adding line '%s' to %s" % (term, filepath))
@@ -57,18 +72,6 @@ def add_line(term, filepath):
             logging.info("SKIPPED TASK. Line already there. ")
     else:
         logging.info("SKIPPED TASK. No %s found" % filepath)
-
-
-def file_contains(term, filepath):
-    """Check whether file contains given term."""
-    with open(filepath) as f:
-        return term in f.read()
-
-
-def append_to_file(text, filepath):
-    """Append text to file."""
-    with open(filepath, "a") as f:
-        f.write(text)
 
 
 def replace_simple(text, replacing, filepath):
@@ -187,13 +190,13 @@ def pipeline(targetpath):
 
     # Download tests.yml template
     download_file(
-        "https://raw.githubusercontent.com/inveniosoftware/.github/master/workflow-templates/tests.yml",
+        GA_TESTS_YAML_URL,
         targetpath + ".github/workflows/tests.yml",
     )
 
     # Download pypi-publish.yml template
     download_file(
-        "https://raw.githubusercontent.com/inveniosoftware/.github/master/workflow-templates/pypi-publish.yml",
+        GA_PYPI_PUBLISH_YAML_URL,
         targetpath + ".github/workflows/pypi-publish.yml",
     )
 
@@ -201,7 +204,7 @@ def pipeline(targetpath):
     delete_line("pep8ignore", targetpath + "pytest.ini")
     replace_regex(
         "(addopts =).*",
-        f'\\1 --isort --pydocstyle --pycodestyle --doctest-glob="*.rst" --doctest-modules --cov={repo_underscores} --cov-report=term-missing tests {repo_underscores}',
+        f'\\1 --isort --pydocstyle --pycodestyle --doctest-glob="*.rst" --doctest-modules --cov={repo_underscores} --cov-report=term-missing',
         targetpath + "pytest.ini",
     )
     if not file_contains("testpaths", targetpath + "pytest.ini"):
