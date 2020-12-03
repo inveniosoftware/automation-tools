@@ -9,6 +9,9 @@ import click
 
 logging.basicConfig(level=logging.DEBUG)
 
+GA_TESTS_YAML_URL = "https://raw.githubusercontent.com/inveniosoftware/.github/master/workflow-templates/tests.yml"
+GA_PYPI_PUBLISH_YAML_URL = "https://raw.githubusercontent.com/inveniosoftware/.github/master/workflow-templates/pypi-publish.yml"
+
 
 def delete_file(filepath):
     """
@@ -156,13 +159,13 @@ def pipeline(targetpath):
 
     # Download tests.yml template
     download_file(
-        "https://raw.githubusercontent.com/inveniosoftware/.github/master/workflow-templates/tests.yml",
+        GA_TESTS_YAML_URL,
         targetpath + ".github/workflows/tests.yml",
     )
 
     # Download pypi-publish.yml template
     download_file(
-        "https://raw.githubusercontent.com/inveniosoftware/.github/master/workflow-templates/pypi-publish.yml",
+        GA_PYPI_PUBLISH_YAML_URL,
         targetpath + ".github/workflows/pypi-publish.yml",
     )
 
