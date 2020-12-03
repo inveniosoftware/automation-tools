@@ -214,9 +214,7 @@ def migrate_repo(path):
         )
 
     # Add .github/workflows *.yml to MANIFEST.in
-    add_line(
-        "recursive-include .github/workflows *.yml", path + "MANIFEST.in"
-    )
+    add_line("recursive-include .github/workflows *.yml", path + "MANIFEST.in")
 
     # Delete travis file
     delete_file(path + ".travis.yml")
@@ -227,11 +225,12 @@ def migrate_repo(path):
     # setup.py: replace pytest deps with pytest-invenio
     replace_list(
         path + "setup.py",
-        r"tests_require = ([[\s*\"(a-z-Z><=0-9.),]*])",
+        r"tests_require = (['\"\'[\s*\"(a-z-A-Z><=0-9.),]*])",
         ["pytest-cov", "pytest-pep8"],
         ["pytest-invenio>=1.4.0"],
         "tests_require",
     )
+
 
 @click.command()
 @click.option("--targetpath", help="Target repo directory path")
