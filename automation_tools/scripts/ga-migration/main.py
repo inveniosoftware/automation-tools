@@ -41,6 +41,16 @@ def delete_line(term, filepath):
                 else:
                     logging.info(f"TASK: Line deleted")
 
+def file_contains(term, filepath):
+    """Check whether file contains given term."""
+    with open(filepath) as f:
+        return term in f.read()
+
+
+def append_to_file(text, filepath):
+    """Append text to file."""
+    with open(filepath, "a") as f:
+        f.write(text)
 
 def add_line(term, filepath):
     """ Add a line to a file """
@@ -54,19 +64,6 @@ def add_line(term, filepath):
             logging.info("SKIPPED TASK. Line already there. ")
     else:
         logging.info("SKIPPED TASK. No %s found" % filepath)
-
-
-def file_contains(term, filepath):
-    """Check whether file contains given term."""
-    with open(filepath) as f:
-        return term in f.read()
-
-
-def append_to_file(text, filepath):
-    """Append text to file."""
-    with open(filepath, "a") as f:
-        f.write(text)
-
 
 def replace_simple(text, replacing, filepath):
     """
@@ -173,7 +170,7 @@ def pipeline(targetpath):
     delete_line("pep8ignore", targetpath + "pytest.ini")
     replace_regex(
         "(addopts =).*",
-        f'\\1 --isort --pydocstyle --pycodestyle --doctest-glob="*.rst" --doctest-modules --cov={repo_underscores} --cov-report=term-missing tests {repo_underscores}',
+        f'\\1 --isort --pydocstyle --pycodestyle --doctest-glob="*.rst" --doctest-modules --cov={repo_underscores} --cov-report=term-missing',
         targetpath + "pytest.ini",
     )
     if not file_contains("testpaths", targetpath + "pytest.ini"):
@@ -181,7 +178,7 @@ def pipeline(targetpath):
             f"testpaths = tests {repo_underscores}", targetpath + "pytest.ini"
         )
 
-    #
+    # MANIFEST.in
     add_line(
         "recursive-include .github/workflows *.yml", targetpath + "MANIFEST.in"
     )
