@@ -243,7 +243,7 @@ def migrate_repo(path):
     # setup.py: replace pytest deps with pytest-invenio
     replace_list(
         path + "setup.py",
-        r"tests_require = (['\"\'[\s*\"(a-z-A-Z><=0-9.),]*])",
+        r"tests_require = (['\"\'[\s*\"(a-z-A-Z><=0-9.\[\]),]*])",
         ["pytest-cov", "pytest-pep8"],
         ["pytest-invenio>=1.4.0"],
         "tests_require",
