@@ -137,10 +137,11 @@ def replace_list(filepath, regex, to_remove, to_add, var_name):
         parsedlist.append(element)
 
     py_parsed_string = f"{var_name} = {json.dumps(parsedlist)}"
-    print(py_parsed_string)
 
     content2 = contents.replace(m.group(0), py_parsed_string)
-    print(content2)
+
+    with open(filepath, "w") as f:
+        f.write(content2)
 
 
 @click.command()
