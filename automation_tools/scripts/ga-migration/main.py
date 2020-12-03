@@ -9,12 +9,10 @@ import json
 import requests
 import click
 
-from config import repository_paths_to_migrate
+from config import (GA_PYPI_PUBLISH_YAML_URL, GA_TESTS_YAML_URL,
+                    REPO_PATHS_TO_MIGRATE)
 
 logging.basicConfig(level=logging.DEBUG)
-
-GA_TESTS_YAML_URL = "https://raw.githubusercontent.com/inveniosoftware/.github/master/workflow-templates/tests.yml"
-GA_PYPI_PUBLISH_YAML_URL = "https://raw.githubusercontent.com/inveniosoftware/.github/master/workflow-templates/pypi-publish.yml"
 
 
 def delete_file(filepath):
@@ -259,7 +257,7 @@ def pipeline(targetpath):
     if targetpath:
         migrate_repo(targetpath)
     else:
-        for repo_path in repository_paths_to_migrate:
+        for repo_path in REPO_PATHS_TO_MIGRATE:
             migrate_repo(repo_path)
 
 
