@@ -120,27 +120,45 @@ def download_file(url, destination):
 
 
 def replace_list(filepath, regex, to_remove, to_add, var_name):
+    """
+    Given a python file, look for the "var_name" using "regex" and:
+    - remove any occurence of the elements from the "to_remove" list
+        partial matches allowed, e.g. pytest-cov will remove pytest-cov>=0.0.1
+    - add the elements from the "to_add" list
+    Write the changes to "var_name" variable in the original file
+    """
+
     with open(filepath, "r") as f:
         contents = f.read()
 
+    # Search the list in the file contents
     m = re.search(regex, contents)
 
+    # Group zero matches the whole assignment,
+    # We need the right part of the assignment (Group 1)
     matched_list_str = m.group(1)
 
+    # Deserialize it
     parsedlist = ast.literal_eval(matched_list_str)
 
+    # For each element to remove, check if it's present in the list
     for element_to_remove in to_remove:
         for element in parsedlist:
+            # If it's part of an element (partial matches allowed), remove it
             if element_to_remove in element:
                 parsedlist.remove(element)
 
+    # Add every element from the to_add list
     for element in to_add:
         parsedlist.append(element)
 
+    # Reconstruct the python assignment of the variable, with the list value
     py_parsed_string = f"{var_name} = {json.dumps(parsedlist)}"
 
+    # Replace the old (matched) list assignment with the one with the new contents
     content2 = contents.replace(m.group(0), py_parsed_string)
 
+    # Overwrite the contents of the file
     with open(filepath, "w") as f:
         f.write(content2)
 
