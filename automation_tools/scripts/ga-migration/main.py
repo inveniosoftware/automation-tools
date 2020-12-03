@@ -3,9 +3,12 @@ import glob
 import logging
 import re
 import os
+import ast
+import json
 
 import requests
 import click
+
 
 logging.basicConfig(level=logging.DEBUG)
 
@@ -112,6 +115,31 @@ def download_file(url, destination):
     open(destination, "wb").write(r.content)
 
 
+def replace_list(filepath, regex, to_remove, to_add, var_name):
+    with open(filepath, "r") as f:
+        contents = f.read()
+
+    m = re.search(regex, contents)
+
+    matched_list_str = m.group(1)
+
+    parsedlist = ast.literal_eval(matched_list_str)
+
+    for element_to_remove in to_remove:
+        for element in parsedlist:
+            if element_to_remove in element:
+                parsedlist.remove(element)
+
+    for element in to_add:
+        parsedlist.append(element)
+
+    py_parsed_string = f"{var_name} = {json.dumps(parsedlist)}"
+    print(py_parsed_string)
+
+    content2 = contents.replace(m.group(0), py_parsed_string)
+    print(content2)
+
+
 @click.command()
 @click.option("--targetpath", default=".", help="Target repo directory path")
 def pipeline(targetpath):
@@ -181,7 +209,7 @@ def pipeline(targetpath):
             f"testpaths = tests {repo_underscores}", targetpath + "pytest.ini"
         )
 
-    #
+    # Add .github/workflows *.yml to MANIFEST.in
     add_line(
         "recursive-include .github/workflows *.yml", targetpath + "MANIFEST.in"
     )
@@ -191,6 +219,15 @@ def pipeline(targetpath):
 
     # Remove bak files
     delete_file(targetpath + "*.bak")
+
+    # replace_list(targetpath + "setup.py", ["a"], ["b"])
+    replace_list(
+        targetpath + "setup.py",
+        r"tests_require = ([[\s*\"(a-z-Z><=0-9.),]*])",
+        ["pytest-cov", "pytest-pep8"],
+        ["pytest-invenio>=1.4.0"],
+        "tests_require",
+    )
 
 
 if __name__ == "__main__":
