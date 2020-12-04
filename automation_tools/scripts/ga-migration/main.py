@@ -9,8 +9,11 @@ import json
 import requests
 import click
 
-from config import (GA_PYPI_PUBLISH_YAML_URL, GA_TESTS_YAML_URL,
-                    REPO_PATHS_TO_MIGRATE)
+from config import (
+    GA_PYPI_PUBLISH_YAML_URL,
+    GA_TESTS_YAML_URL,
+    REPO_PATHS_TO_MIGRATE,
+)
 
 logging.basicConfig(level=logging.DEBUG)
 
@@ -238,11 +241,24 @@ def migrate_repo(path):
     # Remove bak files
     delete_file(path + "*.bak")
 
-    # setup.py: replace pytest deps with pytest-invenio
+    # Simplify setup.py test requirements replacing them with pytest-invenio
     replace_list(
         path + "setup.py",
         r"tests_require = (['\"\'[\s*\"(a-z-A-Z><=0-9.\[\]),]*])",
-        ["pytest-cov", "pytest-pep8"],
+        [
+            # Remove packages already installed by pytest-invenio
+            "check-manifest",
+            "coverage",
+            "docker-services-cli",
+            "pytest-celery",
+            "pytest-cov",
+            "pytest-flask",
+            "pytest-isort",
+            "pytest-pycodestyle",
+            "pytest-pydocstyle",
+            "pytest",
+            "selenium",
+        ],
         ["pytest-invenio>=1.4.0"],
         "tests_require",
     )
