@@ -15,7 +15,7 @@ from config import (
     REPO_PATHS_TO_MIGRATE,
 )
 
-logging.basicConfig(level=logging.DEBUG)
+logging.basicConfig(level=logging.INFO)
 
 
 def delete_file(filepath):
@@ -141,32 +141,41 @@ def replace_list(filepath, regex, to_remove, to_add, var_name):
     # Search the list in the file contents
     m = re.search(regex, contents)
 
-    # Group zero matches the whole assignment,
+    # Group 0 matches the whole assignment,
     # We need the right part of the assignment (Group 1)
     matched_list_str = m.group(1)
 
     # Deserialize it
-    parsedlist = ast.literal_eval(matched_list_str)
+    parsed_list = ast.literal_eval(matched_list_str)
 
-    # For each element to remove, check if it's present in the list
-    for element_to_remove in to_remove:
-        for element in parsedlist:
-            # If it's part of an element (partial matches allowed), remove it
-            if element_to_remove in element:
-                parsedlist.remove(element)
+    # Prepare the new list
+    new_list = []
 
-    # Add every element from the to_add list
-    for element in to_add:
-        parsedlist.append(element)
+    for element in parsed_list:
+        # Look for the package name
+        pm = re.search(r"([a-zA-Z-]*)[><=]*", element)
+        # If it doesn't match with any of the stuff we want to remove,
+        #  add it to the new list
+        if pm.group(1) not in to_remove:
+            new_list.append(element)
+        else:
+            logging.info(f"Removed {element} from {var_name}")
+
+    for el_to_add in to_add:
+        if el_to_add not in parsed_list:
+            new_list.append(el_to_add)
+            logging.info(f"Added {el_to_add} in {var_name}")
+        else:
+            logging.info(f"{el_to_add} already in {var_name}")
 
     # Reconstruct the python assignment of the variable, with the list value
     #  Dump JSON with 4 spaces indent to keep setup.py formatted
     #  Must be kept in-sync with the indent_size value in
     #   .editorconfig / project setups
-    py_parsed_string = f"{var_name} = {json.dumps(parsedlist, indent=4)}"
+    py_new_string = f"{var_name} = {json.dumps(new_list, indent=4)}"
 
     # Replace the old (matched) list assignment with the one with the new contents
-    content2 = contents.replace(m.group(0), py_parsed_string)
+    content2 = contents.replace(m.group(0), py_new_string)
 
     # Overwrite the contents of the file
     with open(filepath, "w") as f:
