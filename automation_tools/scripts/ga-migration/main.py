@@ -153,9 +153,10 @@ def replace_list(filepath, regex, to_remove, to_add, var_name):
 
     for element in parsed_list:
         # Look for the package name
-        pm = re.search(r"([a-zA-Z-]*)[><=]*", element)
+        pm = re.search(r"([0-9a-zA-Z-]*)[><=]*", element)
         # If it doesn't match with any of the stuff we want to remove,
         #  add it to the new list
+        print(pm.group(1))
         if pm.group(1) not in to_remove:
             new_list.append(element)
         else:
