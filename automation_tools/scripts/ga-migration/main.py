@@ -154,7 +154,10 @@ def replace_list(filepath, regex, to_remove, to_add, var_name):
         parsedlist.append(element)
 
     # Reconstruct the python assignment of the variable, with the list value
-    py_parsed_string = f"{var_name} = {json.dumps(parsedlist)}"
+    #  Dump JSON with 4 spaces indent to keep setup.py formatted
+    #  Must be kept in-sync with the indent_size value in
+    #   .editorconfig / project setups
+    py_parsed_string = f"{var_name} = {json.dumps(parsedlist, indent=4)}"
 
     # Replace the old (matched) list assignment with the one with the new contents
     content2 = contents.replace(m.group(0), py_parsed_string)
