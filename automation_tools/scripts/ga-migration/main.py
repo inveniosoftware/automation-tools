@@ -276,6 +276,10 @@ def migrate_repo(path):
             "pytest-pydocstyle",
             "pytest",
             "selenium",
+            # pytest-pep8 is replaced by pytest-pycodestyle
+            "pytest-pep8",
+            # pytest-pep8 is replaced by pytest-isort
+            "isort",
         ],
         ["pytest-invenio>=1.4.0"],
         "tests_require",
