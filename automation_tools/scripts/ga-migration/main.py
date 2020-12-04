@@ -52,14 +52,20 @@ def delete_line(term, filepath):
 
 def file_contains(term, filepath):
     """Check whether file contains given term."""
-    with open(filepath) as f:
-        return term in f.read()
+    if not os.path.isfile(filepath):
+        logging.info("No %s found" % filepath)
+    else:
+        with open(filepath) as f:
+            return term in f.read()
 
 
 def append_to_file(text, filepath):
     """Append text to file."""
-    with open(filepath, "a") as f:
-        f.write(text)
+    if not os.path.isfile(filepath):
+        logging.info("No %s found" % filepath)
+    else:
+        with open(filepath, "a") as f:
+            f.write(text)
 
 
 def add_line(term, filepath):
