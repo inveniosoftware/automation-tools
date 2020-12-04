@@ -5,6 +5,7 @@ import re
 import os
 import ast
 import json
+import yaml
 
 import requests
 import click
@@ -182,6 +183,19 @@ def replace_list(filepath, regex, to_remove, to_add, var_name):
         f.write(content2)
 
 
+def read_yaml(filepath):
+    if os.path.isfile(filepath):
+        logging.info("Found %s" % filepath)
+        with open(filepath, "r") as stream:
+            try:
+                return yaml.safe_load(stream)
+
+            except yaml.YAMLError as exc:
+                print(exc)
+    else:
+        logging.info("SKIPPED TASK. No %s found" % filepath)
+
+
 def migrate_repo(path):
     """Perform migration to repo on given path."""
 
@@ -193,6 +207,14 @@ def migrate_repo(path):
     # TODO: add the trailing slash only if needed
     path = path + "/"
     # Reference: https://codimd.web.cern.ch/TOOkF5yhSAKJq3TiY0L42A?view
+
+    travis = read_yaml(path + ".travis.yml")
+    if travis["deploy"]["provider"] == "pypi":
+        # Download pypi-publish.yml template
+        download_file(
+            GA_PYPI_PUBLISH_YAML_URL,
+            path + ".github/workflows/pypi-publish.yml",
+        )
 
     # .editorconfig
     replace_simple(
@@ -230,12 +252,6 @@ def migrate_repo(path):
     download_file(
         GA_TESTS_YAML_URL,
         path + ".github/workflows/tests.yml",
-    )
-
-    # Download pypi-publish.yml template
-    download_file(
-        GA_PYPI_PUBLISH_YAML_URL,
-        path + ".github/workflows/pypi-publish.yml",
     )
 
     # pytest.ini
