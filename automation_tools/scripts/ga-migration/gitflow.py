@@ -2,16 +2,21 @@ import logging, pygit2
 import os
 import main
 from github import Github
-from pygit2 import GIT_SORT_TOPOLOGICAL, GIT_SORT_REVERSE, Signature
+from pygit2 import (
+    GIT_BRANCH_ALL,
+    GIT_SORT_TOPOLOGICAL,
+    GIT_SORT_REVERSE,
+    Signature,
+)
 import subprocess
 import click
 
 logging.basicConfig(level=logging.INFO)
 local_repositories_path = "./localrepos"
-GA_BRANCH_NAME = "ga-migration"
 
 
 def fullgit(repository_name):
+    GA_BRANCH_NAME = "ga-migration"
     # Clone
     url_github = "https://github.com/"
     org_name = "inveniosoftware"
@@ -32,6 +37,17 @@ def fullgit(repository_name):
 
     gh_repo = g.get_repo(f"{org_name}/{repository_name}")
 
+    num = 0
+    raw_list = repo.raw_listall_branches(GIT_BRANCH_ALL)
+    branch_list = []
+
+    for name in raw_list:
+        branch_list.append(name.decode("utf-8"))
+
+    while f"origin/{GA_BRANCH_NAME}" in branch_list:
+        num += 1
+        GA_BRANCH_NAME = f"{GA_BRANCH_NAME}-{num}"
+
     # Walk commits
     for commit in repo.walk(repo.head.target, GIT_SORT_TOPOLOGICAL):
         repo.checkout_tree(commit)
@@ -46,6 +62,7 @@ def fullgit(repository_name):
 
     # TODO: If the branch already exists, append a number
     #  and update GA_BRANCH_NAME
+
     repo.branches.local.create(GA_BRANCH_NAME, commit)
 
     subprocess.run(
@@ -88,7 +105,7 @@ def fullgit(repository_name):
     # Push the new ga-migration branch
     logging.info(f"Pushing branch '{GA_BRANCH_NAME}'")
     subprocess.run(
-        f"git push --set-upstream origin ga-migration",
+        f"git push --set-upstream origin {GA_BRANCH_NAME}",
         shell=True,
         check=True,
         cwd=f"{local_repositories_path}/{repository_name}",
