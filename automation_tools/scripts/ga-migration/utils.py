@@ -284,9 +284,7 @@ def read_yaml(filepath):
 
 
 def add_newline_at_end(filepath):
-    """
-    Add a newline at the end of the file, if it's not already there
-    """
+    """Add a newline at the end of the file, if it's not already there."""
     if os.path.isfile(filepath):
         with open(filepath, "r") as file:
             lines = file.readlines()
