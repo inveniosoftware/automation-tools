@@ -100,8 +100,8 @@ def migrate_repo(path):
 
     # Upgrade Sphinx 1 to 3 in setup.py
     replace_regex(
-        r"Sphinx>=1.[0-9].[0-9]",
-        "Sphinx>=3",
+        r"Sphinx>=1.[0-9](.[0-9])?.*,",
+        "Sphinx>=3',",
         path + "setup.py",
     )
 

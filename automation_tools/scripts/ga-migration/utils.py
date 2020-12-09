@@ -15,9 +15,8 @@ from jinja2 import Environment, FileSystemLoader
 logging.basicConfig(level=logging.INFO)
 
 JinjaEnv = Environment(
-    loader=FileSystemLoader(
-        f"{os.path.join(os.path.dirname(__file__))}/templates"
-    )
+    loader=FileSystemLoader(f"{os.path.join(os.path.dirname(__file__))}/templates"),
+    keep_trailing_newline=True,
 )
 
 
@@ -185,9 +184,7 @@ def replace_regex(regex, output, filepath):
     """
     Replaces every match of a string with another in the specified file
     """
-    logging.info(
-        "TASK: RegEx replacing %s with %s in %s" % (regex, output, filepath)
-    )
+    logging.info("TASK: RegEx replacing %s with %s in %s" % (regex, output, filepath))
     if os.path.isfile(filepath):
         logging.info("Found %s" % filepath)
         # TODO: expose number of matches
@@ -258,7 +255,8 @@ def replace_list(filepath, regex, to_remove, to_add, var_name):
         #  Dump JSON with 4 spaces indent to keep setup.py formatted
         #  Must be kept in-sync with the indent_size value in
         #   .editorconfig / project setups
-        py_new_string = f"{var_name} = {json.dumps(new_list, indent=4)}"
+        formatted_list = json.dumps(new_list, indent=4).replace('"', "'")
+        py_new_string = f"{var_name} = {formatted_list}"
 
         # Replace the old (matched) list assignment with the one with the new contents
         content2 = contents.replace(m.group(0), py_new_string)

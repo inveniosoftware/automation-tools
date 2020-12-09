@@ -79,7 +79,9 @@ jobs:
             db-service: mysql5
           {%- endif %}
 
+          {%- if db or search %}
           include:
+          {%- endif %}
           {%- if db %}
           - db-service: postgresql9
             DB_EXTRAS: "postgresql"
@@ -148,4 +150,4 @@ jobs:
       - name: Run tests
         run: |
           ./run-tests.sh
-{% endraw %}
+{%- endraw %}
