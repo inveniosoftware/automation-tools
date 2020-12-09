@@ -6,8 +6,7 @@ from utils import (
     replace_regex,
     replace_simple,
     replace_list,
-    read_yaml,
-    download_file,
+    read_yaml_from_url,
     delete_line,
     file_contains,
     append_to_file,
@@ -15,11 +14,10 @@ from utils import (
     delete_file,
     render_template,
     build_template,
+    render_and_copy_template,
 )
 
 from config import (
-    GA_PYPI_PUBLISH_YAML_URL,
-    GA_TESTS_YAML_URL,
     REPO_PATHS_TO_MIGRATE,
 )
 
@@ -34,25 +32,27 @@ def migrate_repo(path):
     repo = path.split("/")[-1]
     repo_underscores = repo.replace("-", "_")
 
-    # TODO: add the trailing slash only if needed
-    path = path + "/"
-    # Reference: https://codimd.web.cern.ch/TOOkF5yhSAKJq3TiY0L42A?view
+    if path[-1] != "/":
+        path += "/"
 
-    travis = read_yaml(path + ".travis.yml")
-    try:
-        if travis["deploy"]["provider"] == "pypi":
-            # Download pypi-publish.yml template
-            download_file(
-                GA_PYPI_PUBLISH_YAML_URL,
-                path + ".github/workflows/pypi-publish.yml",
-            )
-    except Exception as e:
-        logging.info(f"Couldn't find deploy key in .travis.yml")
+    # pypi-publish.yml
+    travis_url = (
+        f"https://raw.githubusercontent.com/inveniosoftware/{repo}/master/.travis.yml"
+    )
+    travis = read_yaml_from_url(travis_url)
+    if travis and travis.get("deploy", {}).get("provider") == "pypi":
+        has_compile_catalog = "compile_catalog" in travis.get("deploy", {}).get(
+            "distributions"
+        )
+        logging.info(f"Has `compile_catalog` in travis.yml?: {has_compile_catalog}")
+        render_and_copy_template(
+            "pypi-publish.yml",
+            {"has_compile_catalog": has_compile_catalog},
+            f"{path}.github/workflows",
+        )
 
     # .editorconfig
-    replace_simple(
-        path + ".travis.yml", ".github/workflows/*.yml", ".editorconfig"
-    )
+    replace_simple(path + ".travis.yml", ".github/workflows/*.yml", ".editorconfig")
 
     # README.rst
     replace_regex(
@@ -74,9 +74,9 @@ def migrate_repo(path):
     )
 
     # tests.yaml
-    build_template(repo, "tests.yml", path=f"{path}/.github/workflows")
+    build_template(repo, "tests.yml", dest_path=f"{path}.github/workflows")
     # run-tests.sh
-    build_template(repo, "run-tests.sh", path=path)
+    build_template(repo, "run-tests.sh", dest_path=path)
 
     # pytest.ini
     delete_line("pep8ignore", path + "pytest.ini")
@@ -86,14 +86,10 @@ def migrate_repo(path):
         path + "pytest.ini",
     )
     if not file_contains("testpaths", path + "pytest.ini"):
-        append_to_file(
-            f"testpaths = tests {repo_underscores}", path + "pytest.ini"
-        )
+        append_to_file(f"testpaths = tests {repo_underscores}", path + "pytest.ini")
 
     # Add .github/workflows *.yml to MANIFEST.in
-    add_line(
-        "recursive-include .github/workflows *.yml\n", path + "MANIFEST.in"
-    )
+    add_line("recursive-include .github/workflows *.yml\n", path + "MANIFEST.in")
 
     # Delete travis file
     delete_file(path + ".travis.yml")

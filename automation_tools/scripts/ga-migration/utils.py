@@ -6,6 +6,7 @@ import os
 import ast
 import json
 import subprocess
+import urllib.request
 
 import requests
 import yaml
@@ -15,10 +16,8 @@ from jinja2 import Environment, FileSystemLoader
 logging.basicConfig(level=logging.INFO)
 
 JinjaEnv = Environment(
-    loader=FileSystemLoader(
-        f"{os.path.join(os.path.dirname(__file__))}/templates"
-    ),
-    keep_trailing_newline=True
+    loader=FileSystemLoader(f"{os.path.join(os.path.dirname(__file__))}/templates"),
+    keep_trailing_newline=True,
 )
 
 
@@ -73,25 +72,31 @@ def get_repo_services(repo_name):
     return services
 
 
-def build_template(repo_name, template, path="."):
+def build_template(repo_name, template, dest_path="."):
     """Build template based on repo services."""
-
-    def create_file(content, destination):
-        """Write content and create file in destination."""
-        dirname = os.path.dirname(os.path.realpath(destination))
-        if not os.path.exists(dirname):
-            os.makedirs(dirname)
-        open(destination, "w").write(content)
 
     repo_services = get_repo_services(repo_name)
     has_services = any(repo_services.values())
     logging.info(f"TASK: Building and copying {template} template...")
 
     directory = "services" if has_services else "serviceless"
+    render_and_copy_template(f"{directory}/{template}", repo_services, dest_path)
 
-    content = render_template(f"{directory}/{template}", context=repo_services)
-    destination = f"{path}/{template}"
-    create_file(content, destination)
+
+def render_and_copy_template(template_path, context, dest_path):
+    """Create file in a specific destination based on template and context."""
+
+    def _create_file(content, destination):
+        """Write content and create file in destination."""
+        dirname = os.path.dirname(os.path.realpath(destination))
+        if not os.path.exists(dirname):
+            os.makedirs(dirname)
+        open(destination, "w").write(content)
+
+    content = render_template(template_path, context=context)
+    template_name = template_path.split("/")[-1]
+    destination = f"{dest_path}/{template_name}"
+    _create_file(content, destination)
 
 
 def render_template(template_file, context={}):
@@ -118,7 +123,6 @@ def delete_file(filepath):
 def delete_line(term, filepath):
     """Delete file line contaning given term."""
     logging.info(f"TASK: Deleting line containing {term} in {filepath}")
-    # import wdb; wdb.set_trace()
     if not os.path.isfile(filepath):
         logging.info("No %s found" % filepath)
     else:
@@ -186,9 +190,7 @@ def replace_regex(regex, output, filepath):
     """
     Replaces every match of a string with another in the specified file
     """
-    logging.info(
-        "TASK: RegEx replacing %s with %s in %s" % (regex, output, filepath)
-    )
+    logging.info("TASK: RegEx replacing %s with %s in %s" % (regex, output, filepath))
     if os.path.isfile(filepath):
         logging.info("Found %s" % filepath)
         # TODO: expose number of matches
@@ -272,14 +274,18 @@ def replace_list(filepath, regex, to_remove, to_add, var_name):
         logging.info("SKIPPED TASK. No %s found" % filepath)
 
 
-def read_yaml(filepath):
-    if os.path.isfile(filepath):
-        logging.info("Found %s" % filepath)
-        with open(filepath, "r") as stream:
-            try:
-                return yaml.safe_load(stream)
+def read_yaml_from_url(url):
+    """Read yaml file from URL and return its content."""
+    try:
+        data = urllib.request.urlopen(url)
+        content = data.read()
+        logging.info("Found %s" % url)
+        return yaml.safe_load(content)
 
-            except yaml.YAMLError as exc:
-                print(exc)
-    else:
-        logging.info("SKIPPED TASK. No %s found" % filepath)
+    except urllib.error.HTTPError as exc:
+        logging.info(f"SKIPPED TASK. Yaml not found: {url}")
+        print(exc)
+
+    except yaml.YAMLError as exc:
+        logging.info(f"SKIPPED TASK. Wrong yaml format: {url}")
+        print(exc)
