@@ -281,3 +281,24 @@ def read_yaml(filepath):
                 print(exc)
     else:
         logging.info("SKIPPED TASK. No %s found" % filepath)
+
+
+def add_newline_at_end(filepath):
+    """
+    Add a newline at the end of the file, if it's not already there
+    """
+    if os.path.isfile(filepath):
+        with open(filepath, "r") as file:
+            lines = file.readlines()
+            last_line = lines[-1]
+            print(last_line)
+        with open(filepath, "a") as file:
+            if last_line != "\n" and last_line[-1] != "\n":
+                file.write("\n")
+                logging.info("TASK: Added newline at the end of %s" % filepath)
+            else:
+                logging.info(
+                    "TASK: %s already ending with a newline" % filepath
+                )
+    else:
+        logging.info("SKIPPED TASK. No %s found" % filepath)

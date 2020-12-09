@@ -15,6 +15,7 @@ from utils import (
     delete_file,
     render_template,
     build_template,
+    add_newline_at_end,
 )
 
 from config import (
@@ -134,6 +135,12 @@ def migrate_repo(path):
 
     # Remove bak files
     delete_file(path + "*.bak")
+
+    # Add newline at EOF
+    add_newline_at_end(path + ".github/workflows/tests.yml")
+    add_newline_at_end(path + "MANIFEST.in")
+    add_newline_at_end(path + "pytest.ini")
+    add_newline_at_end(path + "run-tests.sh")
 
 
 @click.command()
