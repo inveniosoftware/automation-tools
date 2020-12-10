@@ -186,7 +186,7 @@ def replace_simple(text, replacing, filepath):
         logging.info("No %s found" % filepath)
 
 
-def replace_regex(regex, output, filepath):
+def replace_regex(regex, output, filepath, replace_group=0):
     """
     Replaces every match of a string with another in the specified file
     """
@@ -196,7 +196,19 @@ def replace_regex(regex, output, filepath):
         # TODO: expose number of matches
         with fileinput.FileInput(filepath, inplace=True, backup=".bak") as file:
             for line in file:
-                print(re.sub(regex, output, line), end="")
+                if replace_group == 0:
+                    print(re.sub(regex, output, line), end="")
+                else:
+                    # Match regex in line
+                    m = re.search(regex, line)
+                    if m:
+                        # Get the requested group
+                        matched_group = m.group(replace_group)
+                        # Replace the matched group with the given text
+                        print(re.sub(matched_group, output, line), end="")
+                    else:
+                        print(re.sub(regex, output, line), end="")
+
     else:
         logging.info("SKIPPED TASK. No %s found" % filepath)
 

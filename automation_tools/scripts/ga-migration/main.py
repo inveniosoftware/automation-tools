@@ -94,11 +94,14 @@ def migrate_repo(path):
     # Delete travis file
     delete_file(path + ".travis.yml")
 
-    # Upgrade Sphinx 1 to 3 in setup.py
+    # Upgrade from any Sphinx version to 3 in setup.py
     replace_regex(
-        r"Sphinx>=1.[0-9](.[0-9])?.*,",
-        "Sphinx>=3',",
+        # Quote - package name, version (separated with commas) range - Quote
+        r"(\"|')(Sphinx.*)(\"|')",
+        "Sphinx>=3",
         path + "setup.py",
+        # Replace the second matching group only (excludes the outer quotes)
+        2
     )
 
     # Simplify setup.py test requirements replacing them with pytest-invenio
