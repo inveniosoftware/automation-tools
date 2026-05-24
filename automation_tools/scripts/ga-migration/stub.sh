@@ -1,4 +1,7 @@
 #!/bin/bash
+# SPDX-FileCopyrightText: 2020 CERN.
+# SPDX-License-Identifier: MIT
+
 # This script stubs a typical file structure found in invenio repositories 
 #  on travis CI to help testing the migration helper script
 

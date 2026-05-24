@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: 2020 CERN.
+# SPDX-License-Identifier: MIT
+
 import click
 import requests
 import logging
